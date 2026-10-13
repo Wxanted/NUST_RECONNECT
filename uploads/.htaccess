@@ -1,0 +1,5 @@
+# Block direct execution of scripts in the uploads folder
+<FilesMatch "\.(php|phtml|php3|php4|php5|phps|phar)$">
+    Require all denied
+</FilesMatch>
+Options -Indexes
