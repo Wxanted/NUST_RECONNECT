@@ -18,6 +18,11 @@
     box-sizing: border-box;
 }
 
+/* The hidden attribute must win over display rules (e.g. img { display: block }) */
+[hidden] {
+    display: none !important;
+}
+
 html {
     scroll-behavior: smooth;
 }
@@ -61,6 +66,10 @@ h1, h2, h3 {
 h1 { font-size: clamp(1.8rem, 3vw, 2.6rem); margin: 0 0 0.6rem; }
 h2 { font-size: 1.45rem; margin: 2rem 0 0.8rem; }
 h3 { font-size: 1.1rem; margin: 0 0 0.4rem; }
+
+small {
+    color: var(--muted);
+}
 
 .container {
     width: min(1120px, calc(100% - 2rem));
@@ -107,6 +116,7 @@ main {
     color: var(--ink);
     letter-spacing: -0.03em;
     text-decoration: none;
+    white-space: nowrap;
 }
 
 .brand span {
@@ -318,10 +328,8 @@ main {
 
 .badge-lost { background: #fde8ee; color: #b33158; }
 .badge-found { background: #e8f7ef; color: #1f7a4a; }
+.badge-active { background: #fff1d6; color: #9a6508; }
 .badge-resolved { background: #ece7ff; color: #5a3db8; }
-.badge-pending { background: #fff1d6; color: #9a6508; }
-.badge-approved { background: #e8f7ef; color: #1f7a4a; }
-.badge-rejected { background: #fde8ee; color: #b33158; }
 
 /* How it works */
 .steps {
@@ -472,8 +480,14 @@ button:hover,
     color: var(--white);
 }
 
-button[value="item_reject"],
-button[value="claim_reject"],
+button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+/* Secondary / destructive buttons (outlined) */
+button[value="reject"],
+button[value="withdraw"],
 button[value="message_delete"],
 form[action*="delete-item.php"] button {
     background: transparent;
@@ -481,8 +495,8 @@ form[action*="delete-item.php"] button {
     border: 1.5px solid var(--blush);
 }
 
-button[value="item_reject"]:hover,
-button[value="claim_reject"]:hover,
+button[value="reject"]:hover,
+button[value="withdraw"]:hover,
 button[value="message_delete"]:hover,
 form[action*="delete-item.php"] button:hover {
     background: #fde8ee;
@@ -491,7 +505,7 @@ form[action*="delete-item.php"] button:hover {
 
 .filter-form {
     display: grid;
-    grid-template-columns: 1.4fr repeat(3, 1fr) auto auto;
+    grid-template-columns: 1.4fr repeat(4, 1fr) auto auto;
     gap: 0.7rem 0.8rem;
     align-items: end;
     width: 100%;
@@ -592,10 +606,44 @@ dd {
     margin: 0;
 }
 
-.section img[width="320"] {
+/* Photos */
+.item-photo {
+    width: 100%;
+    max-width: 420px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     border: 1px solid var(--line);
+}
+
+.photo-preview {
+    width: 100%;
+    max-width: 240px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    margin-top: 0.5rem;
+}
+
+/* Claims */
+.claim-box {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--rose);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    margin: 0.75rem 0;
+    max-width: 720px;
+}
+
+.claim-box p {
+    margin: 0 0 0.6rem;
+}
+
+.claim-box .inline-form {
+    margin-right: 0.4rem;
+}
+
+.inline-form {
+    display: inline;
 }
 
 /* Admin */
@@ -681,7 +729,7 @@ dd {
     font-size: 0.9rem;
 }
 
-/* Auth / contact pages sit a bit narrower */
+/* Auth / contact / report pages: forms sit in a narrow card */
 .section > .container > form:not(.filter-form) {
     background: var(--white);
     border: 1px solid var(--line);
@@ -715,6 +763,17 @@ td form {
     border: 1px solid var(--line);
     padding: 1rem;
     box-shadow: var(--shadow);
+}
+
+/* The "Delete report" form on an item page is just a button, not a card
+   (must stay AFTER the card rule above) */
+.section > .container > form[action*="delete-item.php"] {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    max-width: none;
 }
 
 @media (max-width: 900px) {
@@ -764,5 +823,20 @@ td form {
 
     .section dl {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Respect "reduce motion" settings */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .item-card {
+        transition: none;
+    }
+
+    .item-card:hover {
+        transform: none;
     }
 }

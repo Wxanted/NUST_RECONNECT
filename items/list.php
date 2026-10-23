@@ -2,8 +2,9 @@
 $pageTitle = 'Browse Items';
 require_once __DIR__ . '/../includes/db.php';
 
-$q = trim($_GET['q'] ?? '');
-$type = $_GET['type'] ?? '';
+$q = input_str($_GET, 'q');
+$type = input_str($_GET, 'type');
+$status = input_str($_GET, 'status');
 $categoryId = (int)($_GET['category'] ?? 0);
 $campusId = (int)($_GET['campus'] ?? 0);
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -12,23 +13,36 @@ $perPage = 12;
 if (!in_array($type, ['lost', 'found'], true)) {
     $type = '';
 }
+if (!in_array($status, ['active', 'resolved'], true)) {
+    $status = '';
+}
 
 $categories = $pdo->query('SELECT categoryId, categoryName FROM Categories ORDER BY categoryName')->fetchAll();
 $campuses = $pdo->query('SELECT campusId, campusName FROM Campus ORDER BY campusName')->fetchAll();
 
 // Build the filter
-$where = ["i.ItemStatus IN ('approved','resolved')"];
+$where = ['1=1'];
 $params = [];
 
 if ($q !== '') {
-    $like = '%' . addcslashes($q, '%_\\') . '%';
-    $where[] = '(i.title LIKE :q1 OR i.description LIKE :q2)';
-    $params[':q1'] = $like;
-    $params[':q2'] = $like;
+    $words = preg_split('/\s+/u', mb_substr($q, 0, 100), -1, PREG_SPLIT_NO_EMPTY);
+    foreach (array_slice($words, 0, 6) as $n => $word) {
+        $like = '%' . addcslashes($word, '%_\\') . '%';
+        $where[] = "(i.title LIKE :w{$n}a OR i.description LIKE :w{$n}b OR c.categoryName LIKE :w{$n}c
+                     OR l.locationName LIKE :w{$n}d OR cp.campusName LIKE :w{$n}e)";
+        foreach (['a', 'b', 'c', 'd', 'e'] as $suffix) {
+            $params[":w{$n}{$suffix}"] = $like;
+        }
+    }
 }
+
 if ($type !== '') {
     $where[] = 'i.type = :type';
     $params[':type'] = $type;
+}
+if ($status !== '') {
+    $where[] = 'i.ItemStatus = :status';
+    $params[':status'] = $status;
 }
 if ($categoryId > 0) {
     $where[] = 'i.categoryId = :cat';
@@ -52,12 +66,13 @@ $pages = max(1, (int)ceil($total / $perPage));
 $page = min($page, $pages);
 $offset = ($page - 1) * $perPage;
 
+// Active items first, newest first
 $stmt = $pdo->prepare(
     "SELECT i.itemId, i.title, i.type, i.dateLost, i.imagePath, i.ItemStatus,
             c.categoryName, l.locationName, cp.campusName
      $from
      WHERE $whereSql
-     ORDER BY i.TimeCreated DESC
+     ORDER BY (i.ItemStatus = 'resolved') ASC, i.TimeCreated DESC
      LIMIT :lim OFFSET :off"
 );
 foreach ($params as $k => $v) {
@@ -91,6 +106,14 @@ require_once __DIR__ . '/../includes/header.php';
                     <option value="">Lost &amp; Found</option>
                     <option value="lost" <?= $type === 'lost' ? 'selected' : '' ?>>Lost</option>
                     <option value="found" <?= $type === 'found' ? 'selected' : '' ?>>Found</option>
+                </select>
+            </label>
+
+            <label for="status">Status
+                <select id="status" name="status">
+                    <option value="">All</option>
+                    <option value="active" <?= $status === 'active' ? 'selected' : '' ?>>Still open</option>
+                    <option value="resolved" <?= $status === 'resolved' ? 'selected' : '' ?>>Reunited</option>
                 </select>
             </label>
 
@@ -130,7 +153,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <article class="item-card">
                         <div class="thumb">
                             <?php if ($item['imagePath']): ?>
-                                <img src="<?= BASE_URL . '/' . e($item['imagePath']) ?>" alt="<?= e($item['title']) ?>" width="200">
+                                <img src="<?= BASE_URL . '/' . e($item['imagePath']) ?>" alt="<?= e($item['title']) ?>" width="200" loading="lazy">
                             <?php else: ?>
                                 No photo
                             <?php endif; ?>
@@ -138,7 +161,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <div class="body">
                             <span class="badge badge-<?= e($item['type']) ?>"><?= e($item['type']) ?></span>
                             <?php if ($item['ItemStatus'] === 'resolved'): ?>
-                                <span class="badge badge-resolved">resolved</span>
+                                <span class="badge badge-resolved">reunited</span>
                             <?php endif; ?>
                             <h3><?= e($item['title']) ?></h3>
                             <p class="meta">

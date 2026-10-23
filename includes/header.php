@@ -11,6 +11,7 @@ $isAdmin = $isLoggedIn && ($_SESSION['role'] ?? '') === 'Admin';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NUST LostAndFound: report lost items, list found items and get belongings back to their owners.">
     <title><?= htmlspecialchars($pageTitle) ?> | <?= APP_NAME ?></title>
 
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
@@ -20,7 +21,7 @@ $isAdmin = $isLoggedIn && ($_SESSION['role'] ?? '') === 'Admin';
 <body>
     <header class="site-header">
         <div class="container header-inner">
-            <a class="brand" href="<?= BASE_URL ?>/index.php">NUST <span>Reconnect</span></a>
+            <a class="brand" href="<?= BASE_URL ?>/index.php">NUST <span>LostAndFound</span></a>
 
             <button class="nav-toggle" id="navToggle" type="button"
             aria-label="Toggle menu" aria-expanded="false" aria-controls="mainNav">&#9776;</button>

@@ -16,7 +16,7 @@ if (!$item || ((int)$item['userId'] !== (int)$_SESSION['userId'] && !is_admin())
     flash_set('error', 'You cannot delete that item.');
     redirect('/user/dashboard.php');
 }
-if ($item['ItemStatus'] === 'resolved') {
+if ($item['ItemStatus'] === 'resolved' && !is_admin()) {
     flash_set('error', 'Resolved items are kept as a record and cannot be deleted.');
     redirect('/user/dashboard.php');
 }

@@ -2,7 +2,7 @@
 
 <footer class="site-footer">
     <div class="container footer-inner">
-        <p class="footer-brand">NUST <span>Reconnect</span></p>
+        <p class="footer-brand">NUST <span>LostAndFound</span></p>
         <p>Helping NUST students find what they lost and return what they found.</p>
         <ul class="footer-links">
             <li><a href="<?= BASE_URL ?>/about.php">About</a></li>

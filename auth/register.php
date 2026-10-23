@@ -12,11 +12,11 @@ $old = ['fullName' => '', 'email' => '', 'studentNumber' => ''];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
-    $old['fullName'] = trim($_POST['fullName'] ?? '');
-    $old['email'] = strtolower(trim($_POST['email'] ?? ''));
-    $old['studentNumber'] = trim($_POST['studentNumber'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $confirm = $_POST['confirm'] ?? '';
+    $old['fullName'] = input_str($_POST, 'fullName');
+    $old['email'] = strtolower(input_str($_POST, 'email'));
+    $old['studentNumber'] = input_str($_POST, 'studentNumber');
+    $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+    $confirm = is_string($_POST['confirm'] ?? null) ? $_POST['confirm'] : '';
 
     if ($old['fullName'] === '' || mb_strlen($old['fullName']) > 100) {
         $errors[] = 'Please enter your full name (max 100 characters).';
@@ -29,32 +29,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (strlen($password) < 8) {
         $errors[] = 'Password must be at least 8 characters.';
+    } elseif (strlen($password) > 72) {
+        $errors[] = 'Password must be at most 72 characters.';
     }
     if ($password !== $confirm) {
         $errors[] = 'Passwords do not match.';
     }
 
     if (!$errors) {
-        $stmt = $pdo->prepare('SELECT userId FROM Users WHERE email = ?');
-        $stmt->execute([$old['email']]);
-        if ($stmt->fetch()) {
-            $errors[] = 'An account with that email already exists.';
-        }
-    }
+        try {
+            $stmt = $pdo->prepare(
+                "INSERT INTO Users (fullName, email, studentNumber, passwordHash, role)
+                 VALUES (?, ?, ?, ?, 'User')"
+            );
+            $stmt->execute([
+                $old['fullName'],
+                $old['email'],
+                $old['studentNumber'] !== '' ? $old['studentNumber'] : null,
+                password_hash($password, PASSWORD_DEFAULT),
+            ]);
 
-    if (!$errors) {
-        $stmt = $pdo->prepare(
-            "INSERT INTO Users (fullName, email, studentNumber, passwordHash, role)
-             VALUES (?, ?, ?, ?, 'User')"
-        );
-        $stmt->execute([
-            $old['fullName'],
-            $old['email'],
-            $old['studentNumber'] !== '' ? $old['studentNumber'] : null,
-            password_hash($password, PASSWORD_DEFAULT),
-        ]);
-        flash_set('success', 'Account created. You can now log in.');
-        redirect('/auth/login.php');
+            // Log the new user in straight away
+            login_user([
+                'userId'   => (int)$pdo->lastInsertId(),
+                'fullName' => $old['fullName'],
+                'role'     => 'User',
+            ]);
+            flash_set('success', 'Welcome to ' . APP_NAME . ', ' . $old['fullName'] . '! Your account is ready.');
+            after_login_redirect('/user/dashboard.php');
+        } catch (PDOException $ex) {
+            if ($ex->getCode() === '23000') {
+                $errors[] = 'An account with that email already exists.';
+            } else {
+                $errors[] = 'Something went wrong creating your account. Please try again.';
+            }
+        }
     }
 }
 
@@ -74,16 +83,16 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         <?php endif; ?>
 
-        <form method="post" action="">
+        <form method="post" action="" data-once>
             <?= csrf_field() ?>
 
             <p>
                 <label for="fullName">Full name</label><br>
-                <input type="text" id="fullName" name="fullName" value="<?= e($old['fullName']) ?>" required maxlength="100">
+                <input type="text" id="fullName" name="fullName" value="<?= e($old['fullName']) ?>" required maxlength="100" autocomplete="name">
             </p>
             <p>
                 <label for="email">Email</label><br>
-                <input type="email" id="email" name="email" value="<?= e($old['email']) ?>" required maxlength="150">
+                <input type="email" id="email" name="email" value="<?= e($old['email']) ?>" required maxlength="150" autocomplete="email">
             </p>
             <p>
                 <label for="studentNumber">Student number (optional)</label><br>
@@ -91,11 +100,11 @@ require_once __DIR__ . '/../includes/header.php';
             </p>
             <p>
                 <label for="password">Password (min 8 characters)</label><br>
-                <input type="password" id="password" name="password" required minlength="8">
+                <input type="password" id="password" name="password" required minlength="8" maxlength="72" autocomplete="new-password">
             </p>
             <p>
                 <label for="confirm">Confirm password</label><br>
-                <input type="password" id="confirm" name="confirm" required minlength="8">
+                <input type="password" id="confirm" name="confirm" required minlength="8" maxlength="72" autocomplete="new-password">
             </p>
             <button type="submit">Register</button>
         </form>

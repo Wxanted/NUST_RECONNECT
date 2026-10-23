@@ -1,4 +1,4 @@
--- NUST Reconnect database
+-- NUST LostAndFound database
 
 
 CREATE DATABASE IF NOT EXISTS nust_reconnect CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -86,3 +86,42 @@ INSERT INTO Categories (categoryName) VALUES
 -- Admin account: admin@nust.local / Admin@12345  (change this password after first login)
 INSERT INTO Users (fullName, email, passwordHash, role)
 VALUES ('Site Admin', 'admin@nust.local', 'admin2026', 'Admin');
+
+USE nust_reconnect;
+
+-- 1. Make sure both campuses exist (by name, not by id)
+INSERT INTO Campus (campusName)
+SELECT 'Lower Campus' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM Campus WHERE campusName = 'Lower Campus');
+
+INSERT INTO Campus (campusName)
+SELECT 'Upper Campus' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM Campus WHERE campusName = 'Upper Campus');
+
+SET @lower = (SELECT MIN(campusId) FROM Campus WHERE campusName = 'Lower Campus');
+SET @upper = (SELECT MIN(campusId) FROM Campus WHERE campusName = 'Upper Campus');
+
+-- 2. Remove any locations already added to these two campuses (prevents duplicates)
+DELETE FROM Location WHERE campusId IN (@lower, @upper);
+
+-- 3. Add your locations
+INSERT INTO Location (locationName, campusId) VALUES
+ ('Library', @lower), ('MTC', @lower), ('Tuckshop', @lower), ('Hotel School', @lower),
+ ('Security Gate / Entrance', @lower), ('Parking Area', @lower),
+ ('Engineering Building', @lower), ('Science and Tech Building', @lower),
+ ('Postgraduate Building', @lower), ('Medleb Building', @lower),
+ ('Architecture Building', @lower), ('Old Engineering Building', @lower),
+ ('Auditorium Building', @lower), ('Other', @lower),
+
+ ('Lecture Building', @upper), ('Computer Labs', @upper), ('Office Building', @upper),
+ ('Student Centre / SRC Office', @upper), ('Admin Offices / Registry', @upper),
+ ('Main Gate Entrance', @upper), ('Small Gate Entrance', @upper),
+ ('Parking Area', @upper), ('Basketball Court', @upper),
+ ('Student Residence / Hostel', @upper), ('Clinic Building', @upper),
+ ('PolyHeights', @upper), ('Yellow Benches', @upper), ('Green Benches', @upper),
+ ('Other', @upper);
+
+-- 4. Remove leftover empty campuses (for example the old "Health Sciences Campus")
+DELETE FROM Campus
+WHERE campusName NOT IN ('Lower Campus', 'Upper Campus')
+  AND campusId NOT IN (SELECT campusId FROM Location);
