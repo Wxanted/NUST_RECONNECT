@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS Items (
     imagePath     VARCHAR(255) NULL,
     proofQuestion VARCHAR(255) NULL,
     proofAnswer   VARCHAR(255) NULL,
-    ItemStatus    ENUM('pending','approved','rejected','resolved') NOT NULL DEFAULT 'pending',
+    ItemStatus    ENUM('active','resolved') NOT NULL DEFAULT 'active',
     TimeCreated   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (userId)     REFERENCES Users(userId)           ON DELETE CASCADE,
     FOREIGN KEY (categoryId) REFERENCES Categories(categoryId),
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS Claims (
     claimantId  INT NOT NULL,
     answer      VARCHAR(255) NULL,
     message     VARCHAR(500) NULL,
-    ClaimStatus ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    ClaimStatus ENUM('pending','completed','rejected','withdrawn') NOT NULL DEFAULT 'pending',
     TimeCreated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (itemId)     REFERENCES Items(itemId) ON DELETE CASCADE,
     FOREIGN KEY (claimantId) REFERENCES Users(userId) ON DELETE CASCADE
@@ -85,7 +85,7 @@ INSERT INTO Categories (categoryName) VALUES
 
 -- Admin account: admin@nust.local / Admin@12345  (change this password after first login)
 INSERT INTO Users (fullName, email, passwordHash, role)
-VALUES ('Site Admin', 'admin@nust.local', 'admin2026', 'Admin');
+VALUES ('Site Admin', 'admin@nust.local', '$2y$10$wi1cYI16QsWx.PdW81aUQ.HQTzipdbb8CWHiipgr9ckrqxXCOh/.q', 'Admin');
 
 USE nust_reconnect;
 

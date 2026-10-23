@@ -2,7 +2,7 @@
 require_once __DIR__ . '/config.php';
 
 $dbHost = 'localhost';
-$dbName = 'nust lostandfound';
+$dbName = 'nust_reconnect';
 $dbUser = 'root';
 $dbPass = '';
 
